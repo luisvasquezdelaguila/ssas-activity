@@ -31,16 +31,32 @@ export default function NewActivityPage() {
   const endParam = searchParams.get('end');
 
   // Formato: 'YYYY-MM-DDTHH:mm' (ya viene así de calendar)
-  // Convertir a Date si existen, si no dejar undefined
-  const parseDate = (val: string | null) => (val ? new Date(val) : undefined);
+  // Para datetime-local inputs, necesitamos el formato string, no Date objects
+  const formatDateForInput = (val: string | null) => {
+    if (!val) return '';
+    // El formato que viene del calendario ya es correcto: 'YYYY-MM-DDTHH:mm'
+    return val;
+  };
+  
   const defaultValues = {
-    startDate: parseDate(startParam),
-    endDate: parseDate(endParam),
+    startDate: formatDateForInput(startParam),
+    endDate: formatDateForInput(endParam),
   };
 
-  // Extender el schema para incluir userId opcional
-  const extendedSchema = createActivitySchema.extend({
+  // Extender el schema para incluir userId opcional y manejar strings de datetime-local
+  const extendedSchema = z.object({
+    title: z.string().min(1, 'El título es requerido'),
+    description: z.string().optional(),
+    startDate: z.string().min(1, 'La fecha de inicio es requerida'),
+    endDate: z.string().min(1, 'La fecha de fin es requerida'),
     userId: z.string().optional(),
+  }).refine((data) => {
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+    return end > start;
+  }, {
+    message: 'La fecha de fin debe ser posterior a la fecha de inicio',
+    path: ['endDate'],
   });
 
   type ExtendedActivityFormData = z.infer<typeof extendedSchema>;
@@ -57,8 +73,8 @@ export default function NewActivityPage() {
 
   // Si los params cambian después de montar, actualiza los valores
   useEffect(() => {
-    const startDate = parseDate(startParam);
-    const endDate = parseDate(endParam);
+    const startDate = formatDateForInput(startParam);
+    const endDate = formatDateForInput(endParam);
     if (startDate) setValue('startDate', startDate);
     if (endDate) setValue('endDate', endDate);
   }, [startParam, endParam, setValue]);
@@ -74,7 +90,16 @@ export default function NewActivityPage() {
       // Si puede seleccionar usuario, usar el seleccionado, si no, el actual
       const userId = canSelectUser ? data.userId || '' : currentUser.id;
       if (!userId) throw new Error('Debes seleccionar un usuario');
-      await createActivity(data, userId, currentCompany.id);
+      
+      // Convertir las fechas de string a Date objects para el store
+      const activityData = {
+        title: data.title,
+        description: data.description,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+      };
+      
+      await createActivity(activityData, userId, currentCompany.id);
       router.push('/calendar');
     } catch (error) {
       setShowError(true);
@@ -167,9 +192,7 @@ export default function NewActivityPage() {
                   <Input
                     id="startDate"
                     type="datetime-local"
-                    {...register('startDate', {
-                      valueAsDate: true,
-                    })}
+                    {...register('startDate')}
                   />
                   {errors.startDate && (
                     <p className="text-sm text-red-600">{errors.startDate.message}</p>
@@ -181,9 +204,7 @@ export default function NewActivityPage() {
                   <Input
                     id="endDate"
                     type="datetime-local"
-                    {...register('endDate', {
-                      valueAsDate: true,
-                    })}
+                    {...register('endDate')}
                   />
                   {errors.endDate && (
                     <p className="text-sm text-red-600">{errors.endDate.message}</p>

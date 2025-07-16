@@ -3,9 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, momentLocalizer, View } from 'react-big-calendar';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import moment from 'moment';
 import 'moment/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +23,9 @@ import { es } from 'date-fns/locale';
 // Configurar moment en español
 moment.locale('es');
 const localizer = momentLocalizer(moment);
+
+// Crear el calendario con drag and drop
+const DragAndDropCalendar = withDragAndDrop(Calendar);
 
 // Mensajes en español para el calendario
 const messages = {
@@ -42,7 +47,7 @@ const messages = {
 export default function CalendarPage() {
   const router = useRouter();
   const { currentUser, currentCompany } = useAuthStore();
-  const { activities, getActivitiesByUser, getActivitiesByCompany, deleteActivity } = useActivityStore();
+  const { activities, getActivitiesByUser, getActivitiesByCompany, deleteActivity, updateActivity } = useActivityStore();
   const { getUsersByCompany } = useUserStore();
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -110,6 +115,50 @@ export default function CalendarPage() {
       }
     }
   };
+
+  // Handler para cuando se arrastra un evento (cambio de fecha/hora)
+  const handleEventDrop = useCallback(async ({ event, start, end }: any) => {
+    // Verificar permisos de edición
+    const canEdit = currentUser?.role === 'super_admin' || 
+      event.resource.userId === currentUser?.id ||
+      (currentUser?.role === 'company_admin' && event.resource.companyId === currentCompany?.id);
+    
+    if (!canEdit || !event.resource) return;
+    
+    try {
+      const updatedActivity = {
+        ...event.resource,
+        startDate: start,
+        endDate: end,
+      };
+      
+      await updateActivity(event.id, updatedActivity);
+    } catch (error) {
+      console.error('Error updating activity:', error);
+    }
+  }, [updateActivity, currentUser, currentCompany]);
+
+  // Handler para cuando se redimensiona un evento (cambio de duración)
+  const handleEventResize = useCallback(async ({ event, start, end }: any) => {
+    // Verificar permisos de edición
+    const canEdit = currentUser?.role === 'super_admin' || 
+      event.resource.userId === currentUser?.id ||
+      (currentUser?.role === 'company_admin' && event.resource.companyId === currentCompany?.id);
+    
+    if (!canEdit || !event.resource) return;
+    
+    try {
+      const updatedActivity = {
+        ...event.resource,
+        startDate: start,
+        endDate: end,
+      };
+      
+      await updateActivity(event.id, updatedActivity);
+    } catch (error) {
+      console.error('Error updating activity:', error);
+    }
+  }, [updateActivity, currentUser, currentCompany]);
 
   const eventStyleGetter = (event: any) => {
     let backgroundColor = '#3174ad';
@@ -196,7 +245,7 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             <div style={{ height: '600px' }}>
-              <Calendar
+              <DragAndDropCalendar
                 localizer={localizer}
                 events={calendarEvents}
                 startAccessor="start"
@@ -204,7 +253,10 @@ export default function CalendarPage() {
                 messages={messages}
                 onSelectEvent={handleSelectEvent}
                 onSelectSlot={handleSelectSlot}
+                onEventDrop={handleEventDrop}
+                onEventResize={handleEventResize}
                 selectable
+                resizable
                 eventPropGetter={eventStyleGetter}
                 view={currentView}
                 onView={setCurrentView}
