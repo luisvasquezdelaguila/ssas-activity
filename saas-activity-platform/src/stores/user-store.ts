@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, CreateUserData, UpdateUserData } from '@/types';
+import { User, CreateUserData, UpdateUserData, Area } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 
@@ -42,7 +42,6 @@ export const useUserStore = create<UserStore>()(
 
       createUser: async (data: CreateUserData) => {
         set({ isLoading: true, error: null });
-        
         try {
           // Verificar que el email no exista
           const existingUser = get().users.find(user => user.email === data.email);
@@ -53,6 +52,30 @@ export const useUserStore = create<UserStore>()(
           // Hashear la contraseña
           const hashedPassword = await bcrypt.hash(data.password, 10);
 
+          // Buscar área por defecto "Colaboradores" para la empresa
+          let areaId = data['areaId'];
+          if (!areaId && data.companyId) {
+            const areasRaw = localStorage.getItem('saas-platform-areas');
+            let areas: Area[] = [];
+            if (areasRaw) {
+              areas = JSON.parse(areasRaw);
+            }
+            let defaultArea = areas.find(a => a.companyId === data.companyId && a.name.toLowerCase() === 'colaboradores');
+            if (!defaultArea) {
+              // Crear área por defecto si no existe
+              defaultArea = {
+                id: uuidv4(),
+                name: 'Colaboradores',
+                companyId: data.companyId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+              areas.push(defaultArea);
+              localStorage.setItem('saas-platform-areas', JSON.stringify(areas));
+            }
+            areaId = defaultArea.id;
+          }
+
           const newUser: User = {
             id: uuidv4(),
             email: data.email,
@@ -60,6 +83,7 @@ export const useUserStore = create<UserStore>()(
             password: hashedPassword,
             role: data.role,
             companyId: data.companyId,
+            areaId,
             createdAt: new Date(),
             updatedAt: new Date(),
             isActive: true,

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,32 +12,69 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { useAuthStore } from '@/stores/auth-store';
 import { useActivityStore } from '@/stores/activity-store';
 import { useForm } from 'react-hook-form';
+import { useUserStore } from '@/stores/user-store';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createActivitySchema, type CreateActivityFormData } from '@/lib/validations';
+import { z } from 'zod';
+import { createActivitySchema } from '@/lib/validations';
 import { Calendar, Clock, ArrowLeft } from 'lucide-react';
 
 export default function NewActivityPage() {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { currentUser, currentCompany } = useAuthStore();
+  const { getUsersByCompany } = useUserStore();
   const { createActivity, isLoading, error } = useActivityStore();
   const [showError, setShowError] = useState(false);
+
+  // Obtener valores de la URL si existen
+  const startParam = searchParams.get('start');
+  const endParam = searchParams.get('end');
+
+  // Formato: 'YYYY-MM-DDTHH:mm' (ya viene así de calendar)
+  // Convertir a Date si existen, si no dejar undefined
+  const parseDate = (val: string | null) => (val ? new Date(val) : undefined);
+  const defaultValues = {
+    startDate: parseDate(startParam),
+    endDate: parseDate(endParam),
+  };
+
+  // Extender el schema para incluir userId opcional
+  const extendedSchema = createActivitySchema.extend({
+    userId: z.string().optional(),
+  });
+
+  type ExtendedActivityFormData = z.infer<typeof extendedSchema>;
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
-  } = useForm<CreateActivityFormData>({
-    resolver: zodResolver(createActivitySchema),
+  } = useForm<ExtendedActivityFormData>({
+    resolver: zodResolver(extendedSchema),
+    defaultValues,
   });
 
-  const onSubmit = async (data: CreateActivityFormData) => {
+  // Si los params cambian después de montar, actualiza los valores
+  useEffect(() => {
+    const startDate = parseDate(startParam);
+    const endDate = parseDate(endParam);
+    if (startDate) setValue('startDate', startDate);
+    if (endDate) setValue('endDate', endDate);
+  }, [startParam, endParam, setValue]);
+
+  // Determinar si puede seleccionar usuario
+  const canSelectUser = currentUser?.role === 'company_admin' || currentUser?.role === 'operator';
+  const companyUsers = (canSelectUser && currentCompany) ? getUsersByCompany(currentCompany.id) : [];
+
+  const onSubmit = async (data: ExtendedActivityFormData) => {
     try {
       if (!currentUser || !currentCompany) return;
-      
       setShowError(false);
-      await createActivity(data, currentUser.id, currentCompany.id);
-      
-      // Redirigir al calendario o dashboard
+      // Si puede seleccionar usuario, usar el seleccionado, si no, el actual
+      const userId = canSelectUser ? data.userId || '' : currentUser.id;
+      if (!userId) throw new Error('Debes seleccionar un usuario');
+      await createActivity(data, userId, currentCompany.id);
       router.push('/calendar');
     } catch (error) {
       setShowError(true);
@@ -80,6 +118,24 @@ export default function NewActivityPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {canSelectUser && (
+                <div className="space-y-2">
+                  <Label htmlFor="userId">Usuario *</Label>
+                  <select
+                    id="userId"
+                    {...register('userId', { required: true })}
+                    className="w-full border rounded px-3 py-2"
+                  >
+                    <option value="">Selecciona un usuario</option>
+                    {companyUsers.map((user) => (
+                      <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
+                    ))}
+                  </select>
+                  {errors.userId && (
+                    <p className="text-sm text-red-600">Debes seleccionar un usuario</p>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="title">Título *</Label>
                 <Input

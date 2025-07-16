@@ -1,69 +1,94 @@
 import { User, Company } from '@/types';
+import { Area } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+import { toast } from 'sonner';
 
 export async function initializeDefaultData() {
-  // Verificar si ya existen datos
-  const existingUsers = localStorage.getItem('saas-platform-users');
-  const existingCompanies = localStorage.getItem('saas-platform-companies');
-  const existingActivities = localStorage.getItem('saas-platform-activities');
+  try {
+    // Verificar si ya existen datos
+    const existingUsers = localStorage.getItem('saas-platform-users');
+    const existingCompanies = localStorage.getItem('saas-platform-companies');
+    const existingActivities = localStorage.getItem('saas-platform-activities');
 
-  // Crear usuario super admin por defecto si no existe
-  if (!existingUsers) {
-    // Hashear contraseña por defecto
-    const hashedPassword = await bcrypt.hash('password123', 10);
-    
-    const superAdmin: User = {
+    // Crear usuario super admin por defecto si no existe
+    if (!existingUsers) {
+      // Hashear contraseña por defecto
+      const hashedPassword = await bcrypt.hash('password123', 10);
+      const superAdmin: User = {
+        id: uuidv4(),
+        email: 'admin@platform.com',
+        name: 'Super Administrador',
+        password: hashedPassword,
+        role: 'super_admin',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
+      };
+      localStorage.setItem('saas-platform-users', JSON.stringify([superAdmin]));
+    }
+
+    // Inicializar arrays vacíos si no existen
+    if (!existingCompanies) {
+      localStorage.setItem('saas-platform-companies', JSON.stringify([]));
+    }
+
+    if (!existingActivities) {
+      localStorage.setItem('saas-platform-activities', JSON.stringify([]));
+    }
+
+    // Crear datos de ejemplo si no existen empresas demo
+    const companies = JSON.parse(localStorage.getItem('saas-platform-companies') || '[]');
+    const demoExists = companies.some((c: Company) => c.domain === 'demo.com');
+    if (!demoExists) {
+      await createSampleData();
+    }
+  } catch (error: any) {
+    toast(
+      'Error al inicializar datos',
+      {
+        description: error?.message || 'Ocurrió un error inesperado.'
+      }
+    );
+  }
+}
+
+export async function createSampleData() {
+  try {
+    // Crear empresa de ejemplo
+    const sampleCompany: Company = {
       id: uuidv4(),
-      email: 'admin@platform.com',
-      name: 'Super Administrador',
-      password: hashedPassword,
-      role: 'super_admin',
+      name: 'Empresa Demo',
+      domain: 'demo.com',
+      settings: {
+        timezone: 'America/Mexico_City',
+        workingHours: {
+          start: '09:00',
+          end: '18:00',
+        },
+        allowUserSelfRegistration: false,
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true,
     };
 
-    localStorage.setItem('saas-platform-users', JSON.stringify([superAdmin]));
-    
-    // También crear datos de ejemplo
-    await createSampleData();
-  }
+    // Crear área por defecto "Colaboradores"
+    const colaboradoresArea: Area = {
+      id: uuidv4(),
+      name: 'Colaboradores',
+      description: 'Área por defecto para todos los colaboradores',
+      companyId: sampleCompany.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isActive: true,
+    };
 
-  // Inicializar arrays vacíos si no existen
-  if (!existingCompanies) {
-    localStorage.setItem('saas-platform-companies', JSON.stringify([]));
-  }
+    // Hashear contraseñas para usuarios de ejemplo
+    const hashedPassword = await bcrypt.hash('demo123', 10);
 
-  if (!existingActivities) {
-    localStorage.setItem('saas-platform-activities', JSON.stringify([]));
-  }
-}
-
-export async function createSampleData() {
-  // Crear empresa de ejemplo
-  const sampleCompany: Company = {
-    id: uuidv4(),
-    name: 'Empresa Demo',
-    domain: 'demo.com',
-    settings: {
-      timezone: 'America/Mexico_City',
-      workingHours: {
-        start: '09:00',
-        end: '18:00',
-      },
-      allowUserSelfRegistration: false,
-    },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    isActive: true,
-  };
-
-  // Hashear contraseñas para usuarios de ejemplo
-  const hashedPassword = await bcrypt.hash('demo123', 10);
-
-  // Crear usuarios de ejemplo
-  const sampleUsers: User[] = [
+    // Crear usuarios de ejemplo
+    const sampleUsers: User[] = [
     {
       id: uuidv4(),
       email: 'admin@demo.com',
@@ -99,12 +124,12 @@ export async function createSampleData() {
     },
   ];
 
-  // Crear actividades de ejemplo
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  
-  const sampleActivities = [
+    // Crear actividades de ejemplo
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const sampleActivities = [
     {
       id: uuidv4(),
       title: 'Reunión de equipo',
@@ -140,32 +165,45 @@ export async function createSampleData() {
     },
   ];
 
-  // Guardar datos de ejemplo
-  const existingUsers = JSON.parse(localStorage.getItem('saas-platform-users') || '[]');
-  const existingCompanies = JSON.parse(localStorage.getItem('saas-platform-companies') || '[]');
-  const existingActivities = JSON.parse(localStorage.getItem('saas-platform-activities') || '[]');
+    // Guardar datos de ejemplo
+    const existingUsers = JSON.parse(localStorage.getItem('saas-platform-users') || '[]');
+    const existingCompanies = JSON.parse(localStorage.getItem('saas-platform-companies') || '[]');
+    const existingActivities = JSON.parse(localStorage.getItem('saas-platform-activities') || '[]');
+    const existingAreas = JSON.parse(localStorage.getItem('saas-platform-areas') || '[]');
 
-  // Solo agregar si no existen ya
-  const companyExists = existingCompanies.some((c: Company) => c.domain === 'demo.com');
-  if (!companyExists) {
-    existingCompanies.push(sampleCompany);
-    localStorage.setItem('saas-platform-companies', JSON.stringify(existingCompanies));
+    // Solo agregar si no existen ya
+    const companyExists = existingCompanies.some((c: Company) => c.domain === 'demo.com');
+    if (!companyExists) {
+      existingCompanies.push(sampleCompany);
+      localStorage.setItem('saas-platform-companies', JSON.stringify(existingCompanies));
 
-    // Agregar usuarios de ejemplo
-    existingUsers.push(...sampleUsers);
-    localStorage.setItem('saas-platform-users', JSON.stringify(existingUsers));
+      // Agregar área por defecto
+      existingAreas.push(colaboradoresArea);
+      localStorage.setItem('saas-platform-areas', JSON.stringify(existingAreas));
 
-    // Agregar actividades de ejemplo (serializadas)
-    const serializedActivities = sampleActivities.map(activity => ({
-      ...activity,
-      startDate: activity.startDate.toISOString(),
-      endDate: activity.endDate.toISOString(),
-      createdAt: activity.createdAt.toISOString(),
-      updatedAt: activity.updatedAt.toISOString(),
-    }));
-    
-    existingActivities.push(...serializedActivities);
-    localStorage.setItem('saas-platform-activities', JSON.stringify(existingActivities));
+      // Agregar usuarios de ejemplo
+      existingUsers.push(...sampleUsers);
+      localStorage.setItem('saas-platform-users', JSON.stringify(existingUsers));
+
+      // Agregar actividades de ejemplo (serializadas)
+      const serializedActivities = sampleActivities.map(activity => ({
+        ...activity,
+        startDate: activity.startDate.toISOString(),
+        endDate: activity.endDate.toISOString(),
+        createdAt: activity.createdAt.toISOString(),
+        updatedAt: activity.updatedAt.toISOString(),
+      }));
+      
+      existingActivities.push(...serializedActivities);
+      localStorage.setItem('saas-platform-activities', JSON.stringify(existingActivities));
+    }
+  } catch (error: any) {
+    toast(
+      'Error al crear datos de ejemplo',
+      {
+        description: error?.message || 'Ocurrió un error inesperado.'
+      }
+    );
   }
 }
 

@@ -16,7 +16,7 @@ import { useUserStore } from '@/stores/user-store';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createCompanySchema, type CreateCompanyFormData } from '@/lib/validations';
-import { Building2, Users, Plus, Settings, Trash2 } from 'lucide-react';
+import { Building2, Users, Plus, Settings, Trash2, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -290,12 +290,22 @@ export default function SuperAdminPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => router.push(`/super-admin/companies/${company.id}`)}
+                              className="text-blue-600 hover:text-blue-700"
+                              title="Editar empresa"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             {company.isActive && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteCompany(company.id)}
                                 className="text-red-600 hover:text-red-700"
+                                title="Desactivar empresa"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

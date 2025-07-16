@@ -1,3 +1,13 @@
+// Modelo de área para empresas
+export interface Area {
+  id: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+  companyId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 // Tipos principales del sistema
 export type UserRole = 'super_admin' | 'company_admin' | 'operator' | 'user';
 
@@ -8,6 +18,7 @@ export interface User {
   password: string; // Hash de la contraseña
   role: UserRole;
   companyId?: string;
+  areaId?: string; // área a la que pertenece el usuario
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
@@ -40,6 +51,7 @@ export interface Activity {
   endDate: Date;
   userId: string;
   companyId: string;
+  areaId?: string; // área a la que pertenece la actividad
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +63,7 @@ export interface CreateUserData {
   password: string;
   role: UserRole;
   companyId?: string;
+  areaId?: string; // área opcional al crear usuario
 }
 
 export interface UpdateUserData {

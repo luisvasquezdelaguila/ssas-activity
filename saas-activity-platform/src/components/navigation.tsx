@@ -29,7 +29,6 @@ export function Navigation() {
     if (!currentUser) return [];
 
     const baseItems = [
-      { icon: Home, label: 'Dashboard', href: '/dashboard' },
       { icon: Calendar, label: 'Calendario', href: '/calendar' },
     ];
 
@@ -43,8 +42,10 @@ export function Navigation() {
 
     if (currentUser.role === 'company_admin') {
       return [
+        { icon: Building2, label: 'Dashboard', href: '/admin' },
         ...baseItems,
         { icon: Users, label: 'Usuarios', href: '/admin/users' },
+        { icon: Building2, label: 'Áreas', href: '/admin/areas' },
         { icon: BarChart3, label: 'Reportes', href: '/admin/reports' },
         { icon: Settings, label: 'Configuración', href: '/admin/settings' },
       ];
@@ -66,67 +67,60 @@ export function Navigation() {
   const navItems = getNavItems();
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-4 py-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-bold text-gray-900">
-            Plataforma SaaS
-          </h1>
-          
+    <aside className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col justify-between py-6 px-4 shadow-lg">
+      <div>
+        <div className="flex flex-col items-start mb-8">
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Plataforma SaaS</h1>
           {currentCompany && (
             <Badge variant="outline" className="text-xs">
               {currentCompany.name}
             </Badge>
           )}
         </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="hidden md:flex items-center space-x-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Button
-                  key={item.href}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push(item.href)}
-                  className="flex items-center space-x-2"
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs">
-                  {currentUser?.name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">
-                  {currentUser?.name}
-                </p>
-                <p className="text-xs text-gray-500 capitalize">
-                  {currentUser?.role?.replace('_', ' ')}
-                </p>
-              </div>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+        <nav className="flex flex-col gap-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Button
+                key={item.href}
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push(item.href)}
+                className="flex items-center gap-2 justify-start w-full"
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </Button>
+            );
+          })}
+        </nav>
+      </div>
+      <div className="flex flex-col gap-4 mt-8">
+        <div className="flex items-center gap-2 mb-2">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="text-xs">
+              {currentUser?.name?.charAt(0) || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              {currentUser?.name}
+            </p>
+            <p className="text-xs text-gray-500 capitalize">
+              {currentUser?.role?.replace('_', ' ')}
+            </p>
           </div>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          className="text-gray-500 hover:text-gray-700 w-full justify-start"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Cerrar sesión
+        </Button>
       </div>
-    </nav>
+    </aside>
   );
 }

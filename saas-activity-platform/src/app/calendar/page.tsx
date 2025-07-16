@@ -48,7 +48,7 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'user' | 'company'>('user');
-  const [currentView, setCurrentView] = useState<View>('month');
+  const [currentView, setCurrentView] = useState<View>('week');
 
   // Cargar actividades según el modo de vista
   useEffect(() => {
