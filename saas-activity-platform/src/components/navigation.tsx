@@ -29,7 +29,9 @@ export function Navigation() {
     if (!currentUser) return [];
 
     const baseItems = [
+      { icon: Home, label: 'Dashboard', href: '/dashboard' },
       { icon: Calendar, label: 'Calendario', href: '/calendar' },
+      { icon: BarChart3, label: 'Reportes', href: '/reports' },
     ];
 
     if (currentUser.role === 'super_admin') {
