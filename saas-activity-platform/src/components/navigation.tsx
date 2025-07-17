@@ -28,41 +28,42 @@ export function Navigation() {
   const getNavItems = () => {
     if (!currentUser) return [];
 
-    const baseItems = [
-      { icon: Home, label: 'Dashboard', href: '/dashboard' },
-      { icon: Calendar, label: 'Calendario', href: '/calendar' },
-      { icon: BarChart3, label: 'Reportes', href: '/reports' },
-    ];
-
     if (currentUser.role === 'super_admin') {
       return [
+        { icon: Home, label: 'Dashboard', href: '/dashboard' },
         { icon: Building2, label: 'Empresas', href: '/super-admin' },
-        { icon: BarChart3, label: 'Reportes', href: '/super-admin/reports' },
+        { icon: Calendar, label: 'Calendario', href: '/calendar' },
+        { icon: BarChart3, label: 'Reportes', href: '/reports' },
         { icon: Settings, label: 'Configuración', href: '/super-admin/settings' },
       ];
     }
 
     if (currentUser.role === 'company_admin') {
       return [
-        { icon: Building2, label: 'Dashboard', href: '/admin' },
-        ...baseItems,
+        { icon: Home, label: 'Dashboard', href: '/admin' },
+        { icon: Calendar, label: 'Calendario', href: '/calendar' },
         { icon: Users, label: 'Usuarios', href: '/admin/users' },
         { icon: Building2, label: 'Áreas', href: '/admin/areas' },
-        { icon: BarChart3, label: 'Reportes', href: '/admin/reports' },
+        { icon: BarChart3, label: 'Reportes', href: '/reports' },
         { icon: Settings, label: 'Configuración', href: '/admin/settings' },
       ];
     }
 
     if (currentUser.role === 'operator') {
       return [
-        ...baseItems,
+        { icon: Home, label: 'Dashboard', href: '/dashboard' },
+        { icon: Calendar, label: 'Calendario', href: '/calendar' },
         { icon: Users, label: 'Equipo', href: '/operator/team' },
+        { icon: BarChart3, label: 'Reportes', href: '/reports' },
       ];
     }
 
+    // Usuario regular
     return [
-      ...baseItems,
+      { icon: Home, label: 'Dashboard', href: '/dashboard' },
+      { icon: Calendar, label: 'Calendario', href: '/calendar' },
       { icon: Plus, label: 'Nueva Actividad', href: '/activities/new' },
+      { icon: BarChart3, label: 'Reportes', href: '/reports' },
     ];
   };
 
