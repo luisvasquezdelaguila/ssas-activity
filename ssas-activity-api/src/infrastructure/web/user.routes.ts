@@ -113,6 +113,7 @@
  *         - name
  *         - password
  *         - role
+ *         - phone
  *       properties:
  *         id:
  *           type: string
@@ -126,6 +127,10 @@
  *         role:
  *           type: string
  *           enum: [super_admin, company_admin, operator, user]
+ *         phone:
+ *           type: string
+ *           description: Número de teléfono con código de país (ej. +51987654321)
+ *           pattern: ^\+\d{1,4}\d{6,15}$
  *         companyId:
  *           type: string
  *         areaId:

@@ -1,43 +1,164 @@
 // src/infrastructure/repositories/activity.repository.ts
 
 import { IActivityRepository } from '../../domain/activity.repository';
-import { Activity } from '../../domain/activity.entity';
+import { Activity, CreateActivityData, UpdateActivityStatusData, ReassignActivityData } from '../../domain/activity.entity';
 import ActivityModel from '../db/activity.model';
-
-function toActivity(doc: any): Activity {
-  const obj = doc.toObject();
-  return {
-    ...obj,
-    id: obj._id.toString(),
-    _id: undefined,
-    __v: undefined,
-    statusHistory: obj.statusHistory || [],
-  };
-}
+import { toActivityEntity } from '../../shared/activity-mapper';
 
 export class ActivityRepository implements IActivityRepository {
-  async create(activity: Activity): Promise<Activity> {
-    const created = await ActivityModel.create(activity);
-    return toActivity(created);
+  
+  async create(activityData: CreateActivityData, createdBy: string, companyId: string): Promise<Activity> {
+    const newActivity = await ActivityModel.create({
+      ...activityData,
+      status: 'pending',
+      createdBy,
+      companyId,
+      statusHistory: [{
+        status: 'pending',
+        changedBy: createdBy,
+        changedAt: new Date(),
+        assignedTo: activityData.assignedTo,
+        startTime: activityData.startTime,
+        endTime: activityData.endTime,
+      }]
+    });
+
+    return toActivityEntity(newActivity);
   }
 
   async findById(id: string): Promise<Activity | null> {
-    const found = await ActivityModel.findById(id);
-    return found ? toActivity(found) : null;
+    const activity = await ActivityModel.findById(id).where({ isActive: true });
+    return activity ? toActivityEntity(activity) : null;
+  }
+
+  async findPendingByUser(userId: string): Promise<Activity[]> {
+    const activities = await ActivityModel.find({
+      assignedTo: userId,
+      status: 'pending',
+      isActive: true
+    }).sort({ createdAt: -1 });
+
+    return activities.map(toActivityEntity);
+  }
+
+  async findByUser(userId: string): Promise<Activity[]> {
+    const activities = await ActivityModel.find({
+      assignedTo: userId,
+      isActive: true
+    }).sort({ createdAt: -1 });
+
+    return activities.map(toActivityEntity);
+  }
+
+  async findPendingByPhone(phone: string): Promise<Activity[]> {
+    // Primero necesitamos encontrar el usuario por teléfono
+    const UserModel = require('../db/user.model').default;
+    const user = await UserModel.findOne({ phone });
+    
+    if (!user) {
+      return [];
+    }
+
+    const activities = await ActivityModel.find({
+      assignedTo: user._id.toString(),
+      status: 'pending',
+      isActive: true
+    }).sort({ createdAt: -1 });
+
+    return activities.map(toActivityEntity);
+  }
+
+  async updateStatus(id: string, statusData: UpdateActivityStatusData, updatedBy: string): Promise<Activity | null> {
+    const activity = await ActivityModel.findById(id);
+    if (!activity || !activity.isActive) {
+      return null;
+    }
+
+    // Agregar entrada al historial
+    const historyEntry = {
+      status: statusData.status,
+      changedBy: updatedBy,
+      changedAt: new Date(),
+      assignedTo: activity.assignedTo,
+      startTime: statusData.startTime || activity.startTime,
+      endTime: statusData.endTime || activity.endTime,
+    };
+
+    const updatedActivity = await ActivityModel.findByIdAndUpdate(
+      id,
+      {
+        status: statusData.status,
+        startTime: statusData.startTime || activity.startTime,
+        endTime: statusData.endTime || activity.endTime,
+        updatedAt: new Date(),
+        $push: { statusHistory: historyEntry }
+      },
+      { new: true }
+    );
+
+    return updatedActivity ? toActivityEntity(updatedActivity) : null;
+  }
+
+  async reassign(id: string, reassignData: ReassignActivityData, updatedBy: string): Promise<Activity | null> {
+    const activity = await ActivityModel.findById(id);
+    if (!activity || !activity.isActive) {
+      return null;
+    }
+
+    // Agregar entrada al historial
+    const historyEntry = {
+      status: activity.status,
+      changedBy: updatedBy,
+      changedAt: new Date(),
+      assignedTo: reassignData.assignedTo,
+      startTime: activity.startTime,
+      endTime: activity.endTime,
+    };
+
+    const updatedActivity = await ActivityModel.findByIdAndUpdate(
+      id,
+      {
+        assignedTo: reassignData.assignedTo,
+        updatedAt: new Date(),
+        $push: { statusHistory: historyEntry }
+      },
+      { new: true }
+    );
+
+    return updatedActivity ? toActivityEntity(updatedActivity) : null;
+  }
+
+  async findByCompany(companyId: string): Promise<Activity[]> {
+    const activities = await ActivityModel.find({
+      companyId,
+      isActive: true
+    }).sort({ createdAt: -1 });
+
+    return activities.map(toActivityEntity);
   }
 
   async findAll(): Promise<Activity[]> {
-    const activities = await ActivityModel.find();
-    return activities.map((a: any) => toActivity(a));
+    const activities = await ActivityModel.find({ isActive: true }).sort({ createdAt: -1 });
+    return activities.map(toActivityEntity);
   }
 
-  async update(id: string, activity: Partial<Activity>): Promise<Activity | null> {
-    const updated = await ActivityModel.findByIdAndUpdate(id, activity, { new: true });
-    return updated ? toActivity(updated) : null;
+  async update(id: string, activityData: Partial<Activity>): Promise<Activity | null> {
+    const updatedActivity = await ActivityModel.findByIdAndUpdate(
+      id,
+      { ...activityData, updatedAt: new Date() },
+      { new: true }
+    );
+
+    return updatedActivity ? toActivityEntity(updatedActivity) : null;
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await ActivityModel.findByIdAndDelete(id);
+    const result = await ActivityModel.findByIdAndUpdate(
+      id,
+      { isActive: false, updatedAt: new Date() },
+      { new: true }
+    );
+
     return !!result;
   }
 }

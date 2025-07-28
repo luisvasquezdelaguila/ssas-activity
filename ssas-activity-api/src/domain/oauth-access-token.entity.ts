@@ -4,7 +4,7 @@ import { User } from './user.entity';
 
 export interface OAuthAccessTokenEntity {
   id: string;
-  userId: number;
+  userId: string; // Cambiar de number a string para compatibilidad con ObjectId
   revoked: boolean;
   createdAt: Date;
   updatedAt: Date;

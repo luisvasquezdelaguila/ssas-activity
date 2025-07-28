@@ -1,88 +1,214 @@
 // src/infrastructure/web/activity.controller.ts
 
 import { Request, Response } from 'express';
-import { ActivityUseCase } from '../../application/activity.usecase';
+import { ActivityUseCases } from '../../application/activity.usecase';
 import { ActivityRepository } from '../repositories/activity.repository';
-import { ActivityStatus } from '../../domain/activity.entity';
+import { UserRepository } from '../repositories/user.repository';
+import { 
+  createActivitySchema, 
+  updateActivityStatusSchema, 
+  reassignActivitySchema,
+  CreateActivityInput,
+  UpdateActivityStatusInput,
+  ReassignActivityInput
+} from '../../shared/validators/activity.validator';
 
-const activityUseCase = new ActivityUseCase(new ActivityRepository());
+const activityRepository = new ActivityRepository();
+const userRepository = new UserRepository();
+const activityUseCases = new ActivityUseCases(activityRepository, userRepository);
 
 export const createActivity = async (req: Request, res: Response) => {
   try {
-    const {
-      title,
-      description,
-      assignedTo,
-      createdBy,
-      companyId,
-    } = req.body;
+    const user = (req as any).user; // Usuario autenticado
 
-    const now = new Date();
-    const activityData = {
-      title,
-      description,
-      status: 'pending' as ActivityStatus,
-      assignedTo,
-      createdBy,
-      companyId,
-      statusHistory: [{
-        status: 'pending' as ActivityStatus,
-        changedBy: createdBy,
-        changedAt: now,
-        assignedTo,
-      }],
-      createdAt: now,
-      updatedAt: now,
-      isActive: true,
-    };
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
 
-    const activity = await activityUseCase.createActivity(activityData);
-    res.status(201).json(activity);
+    // Validar entrada con Zod
+    const validationResult = createActivitySchema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        error: 'Datos inválidos',
+        details: validationResult.error.issues.map((issue: any) => ({
+          field: issue.path.join('.'),
+          message: issue.message
+        }))
+      });
+    }
+
+    const validatedData: CreateActivityInput = validationResult.data;
+
+    const activity = await activityUseCases.createActivity(
+      validatedData,
+      user.id,
+      user.companyId
+    );
+
+    res.status(201).json({
+      success: true,
+      data: { activity }
+    });
   } catch (error) {
-    const err = error as Error;
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: (error as Error).message });
   }
 };
 
 export const getActivityById = async (req: Request, res: Response) => {
   try {
-    const activity = await activityUseCase.getActivityById(req.params.id);
-    if (!activity) return res.status(404).json({ error: 'Activity not found' });
-    res.json(activity);
+    const { id } = req.params;
+    const activity = await activityUseCases.getActivityById(id);
+
+    if (!activity) {
+      return res.status(404).json({ error: 'Actividad no encontrada' });
+    }
+
+    res.json({
+      success: true,
+      data: { activity }
+    });
   } catch (error) {
-    const err = error as Error;
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: (error as Error).message });
   }
 };
 
-export const getAllActivities = async (_req: Request, res: Response) => {
+export const getPendingActivities = async (req: Request, res: Response) => {
   try {
-    const activities = await activityUseCase.getAllActivities();
-    res.json(activities);
+    const user = (req as any).user;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const activities = await activityUseCases.getPendingActivitiesByUser(user.id);
+
+    res.json({
+      success: true,
+      data: { activities }
+    });
   } catch (error) {
-    const err = error as Error;
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: (error as Error).message });
   }
 };
 
-export const updateActivity = async (req: Request, res: Response) => {
+export const getMyActivities = async (req: Request, res: Response) => {
   try {
-    const activity = await activityUseCase.updateActivity(req.params.id, req.body);
-    if (!activity) return res.status(404).json({ error: 'Activity not found' });
-    res.json(activity);
+    const user = (req as any).user;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const activities = await activityUseCases.getActivitiesByUser(user.id);
+
+    res.json({
+      success: true,
+      data: { activities }
+    });
   } catch (error) {
-    const err = error as Error;
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: (error as Error).message });
   }
 };
 
-export const deleteActivity = async (req: Request, res: Response) => {
+export const updateActivityStatus = async (req: Request, res: Response) => {
   try {
-    const success = await activityUseCase.deleteActivity(req.params.id);
-    if (!success) return res.status(404).json({ error: 'Activity not found' });
-    res.status(204).send();
+    const { id } = req.params;
+    const user = (req as any).user;
+
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // Validar entrada con Zod
+    const validationResult = updateActivityStatusSchema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        error: 'Datos inválidos',
+        details: validationResult.error.issues.map((issue: any) => ({
+          field: issue.path.join('.'),
+          message: issue.message
+        }))
+      });
+    }
+
+    const validatedData: UpdateActivityStatusInput = validationResult.data;
+
+    const activity = await activityUseCases.updateActivityStatus(id, validatedData, user.id);
+
+    if (!activity) {
+      return res.status(404).json({ error: 'Actividad no encontrada' });
+    }
+
+    res.json({
+      success: true,
+      data: { activity }
+    });
   } catch (error) {
-    const err = error as Error;
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: (error as Error).message });
+  }
+};
+
+export const reassignActivity = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = (req as any).user;
+
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // Validar entrada con Zod
+    const validationResult = reassignActivitySchema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        error: 'Datos inválidos',
+        details: validationResult.error.issues.map((issue: any) => ({
+          field: issue.path.join('.'),
+          message: issue.message
+        }))
+      });
+    }
+
+    const validatedData: ReassignActivityInput = validationResult.data;
+
+    const activity = await activityUseCases.reassignActivity(id, validatedData, user.id, user.companyId);
+
+    if (!activity) {
+      return res.status(404).json({ error: 'Actividad no encontrada' });
+    }
+
+    res.json({
+      success: true,
+      data: { activity }
+    });
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message });
+  }
+};
+
+export const getCompanyActivities = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // Solo admins pueden ver todas las actividades de la compañía
+    if (!['super_admin', 'company_admin'].includes(user.role)) {
+      return res.status(403).json({ error: 'No tienes permisos para ver todas las actividades' });
+    }
+
+    const activities = await activityUseCases.getActivitiesByCompany(user.companyId);
+
+    res.json({
+      success: true,
+      data: { activities }
+    });
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message });
   }
 };

@@ -30,6 +30,21 @@ export class UserRepository implements IUserRepository {
     return users.map((u: any) => toUser(u));
   }
 
+  async findByCompanyId(companyId: string): Promise<User[]> {
+    const users = await UserModel.find({ companyId });
+    return users.map((u: any) => toUser(u));
+  }
+
+  async findByIdAndCompanyId(id: string, companyId: string): Promise<User | null> {
+    const found = await UserModel.findOne({ _id: id, companyId });
+    return found ? toUser(found) : null;
+  }
+
+  async findByPhone(phone: string): Promise<User | null> {
+    const found = await UserModel.findOne({ phone });
+    return found ? toUser(found) : null;
+  }
+
   async update(id: string, user: Partial<User>): Promise<User | null> {
     const updated = await UserModel.findByIdAndUpdate(id, user, { new: true });
     return updated ? toUser(updated) : null;

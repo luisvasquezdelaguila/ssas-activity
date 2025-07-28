@@ -3,11 +3,21 @@
 import { Request, Response } from 'express';
 import { UserUseCase } from '../../application/user.usecase';
 import { UserRepository } from '../repositories/user.repository';
+import { validatePhone } from '../../shared/validators/phone-validator';
 
 const userUseCase = new UserUseCase(new UserRepository());
 
 export const createUser = async (req: Request, res: Response) => {
   try {
+    const { phone } = req.body;
+    
+    // Validar teléfono si se proporciona
+    if (phone && !validatePhone(phone)) {
+      return res.status(400).json({ 
+        error: 'El teléfono debe incluir código de país (ej: +51987654321)' 
+      });
+    }
+    
     const user = await userUseCase.createUser(req.body);
     res.status(201).json(user);
   } catch (error) {
@@ -39,6 +49,15 @@ export const getAllUsers = async (_req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   try {
+    const { phone } = req.body;
+    
+    // Validar teléfono si se está actualizando
+    if (phone && !validatePhone(phone)) {
+      return res.status(400).json({ 
+        error: 'El teléfono debe incluir código de país (ej: +51987654321)' 
+      });
+    }
+    
     const user = await userUseCase.updateUser(req.params.id, req.body);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);

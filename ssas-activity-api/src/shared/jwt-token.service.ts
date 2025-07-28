@@ -2,7 +2,7 @@
 
 import jwt, { SignOptions, JwtPayload } from 'jsonwebtoken';
 import { OAuthAccessTokenModel } from '../infrastructure/db/oauth-access-token.model';
-import authConfig from '../config/auth.config';
+import authConfig from '../config/env/auth';
 import moment from 'moment-timezone';
 import appConfig from '../config/env/server';
 import { generateUniqueTokenId } from './helper';
@@ -51,7 +51,7 @@ export class JwtTokenService {
   static async persistToken(options: TokenOptions) {
     const createdAtStr = options.createdAtToken.format('YYYY-MM-DD HH:mm:ss');
     await OAuthAccessTokenModel.create({
-      id: options.id,
+      tokenId: options.id, // Usar tokenId en lugar de id
       userId: options['user_id'],
       clientId: authConfig.CLIENT_ID_LARAVEL_PASSPORT, // Por defecto para mantener compatibilidad con Laravel
       name: options.name,
@@ -93,8 +93,8 @@ export class JwtTokenService {
     const tokenValue = token.startsWith('Bearer ') ? token.split(' ')[1] : token;
     const decoded = await this.verifyToken(tokenValue);
     // @ts-expect-error: decoded could be string or JwtPayload
-    const oAuthToken = await OAuthAccessTokenModel.findOne({ id: decoded.jti });
-    const user = await UserModel.findById(oAuthToken?.userId)
+    const oAuthToken = await OAuthAccessTokenModel.findOne({ tokenId: decoded.jti });
+    const user = await UserModel.findById(oAuthToken?.userId) // userId ahora es string compatible con ObjectId
     if (!oAuthToken) {
       throw new Error('Token no válido o expirado');
     }

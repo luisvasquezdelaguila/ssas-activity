@@ -6,6 +6,7 @@ export function toUserEntity(userModel: UserDocument): User {
     id: userModel._id?.toString() ?? userModel.id,
     email: userModel.email,
     name: userModel.name,
+    phone: userModel.phone,
     role: userModel.role,
     companyId: userModel.companyId,
     areaId: userModel.areaId,
@@ -13,6 +14,5 @@ export function toUserEntity(userModel: UserDocument): User {
     password: userModel.password,
     createdAt: userModel.createdAt,
     updatedAt: userModel.updatedAt,
-    // Agrega más campos si tu interfaz los requiere
   };
 }

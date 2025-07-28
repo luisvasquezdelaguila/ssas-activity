@@ -4,7 +4,6 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "outDir": "dist",
-    "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
     "sourceMap": true,
@@ -13,8 +12,9 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "skipLibCheck": true,
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "types": ["jest", "node"]
   },
-  "include": ["src", "src/config/sequelize-cli-config.js"],
+  "include": ["src", "tests"],
   "exclude": ["dist"]
 }

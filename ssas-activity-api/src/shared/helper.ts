@@ -23,7 +23,7 @@ export const generateUniqueTokenId = async (): Promise<string> => {
     let uniqueId = '';
     while (maxAttempts-- > 0) {
       uniqueId = generateRandomTokenId(80);
-      const oauthToken = await OAuthAccessTokenModel.findOne({ _id: uniqueId });
+      const oauthToken = await OAuthAccessTokenModel.findOne({ tokenId: uniqueId });
       if (!oauthToken) {
         break;
       }

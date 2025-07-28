@@ -26,3 +26,21 @@ export interface Activity {
   updatedAt: Date;
   isActive: boolean;
 }
+
+export interface CreateActivityData {
+  title: string;
+  description?: string;
+  assignedTo?: string; // Opcional - si no se proporciona se asigna al creador
+  startTime?: Date;
+  endTime?: Date;
+}
+
+export interface UpdateActivityStatusData {
+  status: ActivityStatus;
+  startTime?: Date;
+  endTime?: Date;
+}
+
+export interface ReassignActivityData {
+  assignedTo: string;
+}
