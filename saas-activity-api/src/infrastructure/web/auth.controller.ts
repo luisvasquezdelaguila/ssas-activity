@@ -2,12 +2,10 @@
 
 import { Request, Response } from 'express';
 import UserModel from '../db/user.model';
-import { OAuthAccessTokenModel } from '../db/oauth-access-token.model';
 import bcrypt from 'bcryptjs';
 import { JwtTokenService } from '../../shared/jwt-token.service';
-import { toUserEntity } from '../../shared/user-mapper';
+import { toUserEntity } from '../../shared/mappers/user-mapper';
 import { loginSchema, registerSchema, phoneLoginSchema } from '../../shared/validators/auth.validator';
-
 
 
 
@@ -154,21 +152,8 @@ export const logout = async (req: Request, res: Response) => {
                 const decoded = await JwtTokenService.verifyToken(token);
                 // @ts-expect-error: decoded could be string or JwtPayload  
                 currentTokenId = decoded.jti; // El jti es lo que se almacena como tokenId
-
                 // Revocar el token actual específicamente
-                const currentTokenResult = await OAuthAccessTokenModel.updateOne(
-                    { 
-                        tokenId: currentTokenId,
-                        revoked: false 
-                    },
-                    {
-                        $set: {
-                            revoked: true,
-                            socketId: null,
-                            updatedAt: new Date()
-                        }
-                    }
-                );
+                const currentTokenResult = await JwtTokenService.revokeToken(currentTokenId);
                 currentTokenRevoked = currentTokenResult.modifiedCount;
             } catch (tokenError) {
                 console.warn('Error al procesar token actual:', tokenError);
@@ -178,20 +163,7 @@ export const logout = async (req: Request, res: Response) => {
         const userId = user.id || user._id;
 
         // Revocar todos los demás tokens activos del usuario (por seguridad)
-        const otherTokensResult = await OAuthAccessTokenModel.updateMany(
-            { 
-                userId: userId.toString(),
-                revoked: false,
-                ...(currentTokenId && { tokenId: { $ne: currentTokenId } }) // Excluir el token ya revocado
-            },
-            {
-                $set: {
-                    revoked: true,
-                    socketId: null,
-                    updatedAt: new Date()
-                }
-            }
-        );
+        const otherTokensResult = await JwtTokenService.revokeAllTokens(userId, currentTokenId);
 
         const totalTokensRevoked = currentTokenRevoked + otherTokensResult.modifiedCount;
 

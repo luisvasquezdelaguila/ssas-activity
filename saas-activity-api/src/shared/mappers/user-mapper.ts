@@ -1,5 +1,5 @@
-import { User } from '../domain/user.entity'; // UserEntity es una interface
-import {UserDocument} from '../infrastructure/db/user.model';
+import { User } from '../../domain/user.entity'; // UserEntity es una interface
+import {UserDocument} from '../../infrastructure/db/user.model';
 
 export function toUserEntity(userModel: UserDocument): User {
   return {

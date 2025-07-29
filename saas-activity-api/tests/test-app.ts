@@ -1,6 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
+// Configurar dotenv una sola vez con quiet option
+dotenv.config({ quiet: true });
+
 import { MONGO_URI, DB_NAME } from '../src/config/env/database';
 
 import authRoutes from '../src/infrastructure/web/auth.routes';
@@ -9,6 +14,7 @@ import companyRoutes from '../src/infrastructure/web/company.routes';
 import planRoutes from '../src/infrastructure/web/plan.routes';
 import areaRoutes from '../src/infrastructure/web/area.routes';
 import activityRoutes from '../src/infrastructure/web/activity.routes';
+
 
 export function createTestApp() {
   const app = express();

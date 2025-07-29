@@ -99,10 +99,11 @@ export class TestDataFactory {
      * Crear un super admin de prueba
      */
     static async createTestSuperAdmin(overrides: any = {}) {
-        console.log('Creating test super admin with overrides:', overrides);
+        // console.log('Creating test super admin with overrides:', overrides);
         return this.createTestUser({
             name: 'Super Admin Test',
-            email: 'superadmin@test.com',
+            // email: 'superadmin@test.com',
+            email: overrides.email || `superadmin-${Date.now()}@test.com`, // Unique email
             phone: '+51999888777',
             role: 'super_admin',
             password: 'aveces', // Default password

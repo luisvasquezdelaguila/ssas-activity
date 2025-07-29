@@ -1,8 +1,8 @@
 // src/shared/oauth-access-token-mapper.ts
 
-import { OAuthAccessTokenEntity } from '../domain/oauth-access-token.entity';
-import { IOAuthAccessToken } from '../infrastructure/db/oauth-access-token.model';
-import { User } from '../domain/user.entity'; // Ajusta si es interface
+import { OAuthAccessTokenEntity } from '../../domain/oauth-access-token.entity';
+import { IOAuthAccessToken } from '../../infrastructure/db/oauth-access-token.model';
+import { User } from '../../domain/user.entity'; // Ajusta si es interface
 
 export function toOAuthAccessTokenEntity(model: IOAuthAccessToken): OAuthAccessTokenEntity {
   return {

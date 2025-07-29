@@ -8,9 +8,9 @@ import appConfig from '../config/env/server';
 import { generateUniqueTokenId } from './helper';
 import { User } from '../domain/user.entity';
 import UserModel from '../infrastructure/db/user.model';
-import { toUserEntity } from './user-mapper';
+import { toUserEntity } from './mappers/user-mapper';
 import { OAuthAccessTokenEntity } from '../domain/oauth-access-token.entity';
-import { toOAuthAccessTokenEntity } from './oauth-access-token-mapper';
+import { toOAuthAccessTokenEntity } from './mappers/oauth-access-token-mapper';
 
 export interface TokenOptions {
   user_id: string;
@@ -86,6 +86,23 @@ export class JwtTokenService {
       },
       authConfig.privateKey,
       jwtOptions,
+    );
+  }
+  
+  static async revokeToken(tokenId: string): Promise<any> {
+    
+    return await OAuthAccessTokenModel.updateOne(
+      { tokenId, revoked: false , socketId: null },
+      { $set: { revoked: true, updatedAt: new Date() } }
+    );
+
+
+  }
+
+  static async revokeAllTokens(userId: string, excludeTokenId: string | null = null): Promise<any> {
+    return await OAuthAccessTokenModel.updateMany(
+      { userId, revoked: false, ...(excludeTokenId && { tokenId: { $ne: excludeTokenId } }) },
+      { $set: { revoked: true, updatedAt: new Date(), socketId: null } }
     );
   }
 

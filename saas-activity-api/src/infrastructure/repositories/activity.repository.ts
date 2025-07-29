@@ -3,7 +3,7 @@
 import { IActivityRepository } from '../../domain/activity.repository';
 import { Activity, CreateActivityData, UpdateActivityStatusData, ReassignActivityData } from '../../domain/activity.entity';
 import ActivityModel from '../db/activity.model';
-import { toActivityEntity } from '../../shared/activity-mapper';
+import { toActivityEntity } from '../../shared/mappers/activity-mapper';
 
 export class ActivityRepository implements IActivityRepository {
   

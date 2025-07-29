@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { createTestApp } from './test-app';
 import { TestDataFactory } from './test-data-factory';
-import { email } from 'zod';
+// import { email } from 'zod';
 
 const app = createTestApp();
 
@@ -10,22 +10,24 @@ describe('Auth API Tests', () => {
     
     it('should login successfully with valid credentials', async () => {
       // Crear usuario de prueba
+      const email = `test-${Date.now()}@example.com`; // Unique email
       const testUser = await TestDataFactory.createTestUser({
-        email: 'test@example.com',
+        // email: 'test@example.com',
+        email: email, // Unique email
         password: 'aveces'
       });
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          username: 'test@example.com',  // Usar username
+          username: email,  // Usar username
           password: 'aveces'
         });
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('data');
       expect(response.body.data).toHaveProperty('user');
-      expect(response.body.data.user.email).toBe('test@example.com');
+      expect(response.body.data.user.email).toBe(email);
       expect(response.body.data.user).not.toHaveProperty('password');
       expect(
         response.body.access_token
@@ -33,15 +35,17 @@ describe('Auth API Tests', () => {
     });
 
     it('should fail with invalid password', async () => {
+      const email = `test-${Date.now()}@invalid.com`; // Unique email
       await TestDataFactory.createTestUser({
-        email: 'test@example.com',
+        // email: 'test@example.com',
+        email: email, // Unique email
         password: 'aveces'
       });
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          username: 'test@example.com',  // Usar username
+          username: email,  // Usar username
           password: 'wrongpassword'
         });
     console.log('Login response:', response.body);
@@ -72,14 +76,15 @@ describe('Auth API Tests', () => {
     });
 
     it('should login super admin successfully', async () => {
+      const email = `superadmin-${Date.now()}@test.com`; // Unique email
       const superAdmin = await TestDataFactory.createTestSuperAdmin({
-        email: 'superadmin@test.com'
+        email: email
       });
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          username: 'superadmin@test.com',  // Usar username
+          username: email,  // Usar username
           password: 'aveces'
         });
 

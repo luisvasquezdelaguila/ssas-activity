@@ -1,7 +1,7 @@
 // src/shared/activity-mapper.ts
 
-import { Activity, ActivityStatusHistory, User, Company } from '../domain/activity.entity';
-import { ActivityDocument } from '../infrastructure/db/activity.model';
+import { Activity, ActivityStatusHistory, User, Company } from '../../domain/activity.entity';
+import { ActivityDocument } from '../../infrastructure/db/activity.model';
 
 function mapUserField(field: any): string | User {
   if (!field) return '';
