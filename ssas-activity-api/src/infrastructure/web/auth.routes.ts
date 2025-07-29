@@ -2,7 +2,7 @@
 
 import { Router } from 'express';
 import { register, login, me, phoneLogin } from './auth.controller';
-// import { authenticateJWT } from '../middlewares/auth.middleware';
+import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -258,8 +258,6 @@ router.post('/phone-login', phoneLogin);
  *     summary: Obtener información del usuario autenticado
  *     description: Devuelve la información del usuario actualmente autenticado
  *     tags: [Autenticación]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Información del usuario obtenida exitosamente
@@ -308,6 +306,6 @@ router.post('/phone-login', phoneLogin);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-// router.get('/me', authenticateJWT, me);
+router.get('/me', authenticateToken, me);
 
 export default router;

@@ -6,6 +6,9 @@ import { MONGO_URI, DB_NAME } from '../src/config/env/database';
 import authRoutes from '../src/infrastructure/web/auth.routes';
 import userRoutes from '../src/infrastructure/web/user.routes';
 import companyRoutes from '../src/infrastructure/web/company.routes';
+import planRoutes from '../src/infrastructure/web/plan.routes';
+import areaRoutes from '../src/infrastructure/web/area.routes';
+import activityRoutes from '../src/infrastructure/web/activity.routes';
 
 export function createTestApp() {
   const app = express();
@@ -17,6 +20,9 @@ export function createTestApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);
   app.use('/api/companies', companyRoutes);
+  app.use('/api/plans', planRoutes);
+  app.use('/api/areas', areaRoutes);
+  app.use('/api/activities', activityRoutes);
 
   // Error handling middleware
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

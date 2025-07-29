@@ -1,48 +1,90 @@
 // src/infrastructure/web/auth.controller.ts
 
 import { Request, Response } from 'express';
-// import { signToken } from '../../shared/jwt';
 import UserModel from '../db/user.model';
 import bcrypt from 'bcryptjs';
-import authConfig from '../../config/env/auth';
-import moment from 'moment-timezone';
-import appConfig from '../../config/env/server';
-import { generateUniqueTokenId } from '../../shared/helper';
-import { OAuthAccessTokenModel } from '../db/oauth-access-token.model';
 import { JwtTokenService } from '../../shared/jwt-token.service';
-// import { User } from '../../domain/user.entity';
 import { toUserEntity } from '../../shared/user-mapper';
+import { loginSchema, registerSchema, phoneLoginSchema } from '../../shared/validators/auth.validator';
 
 
 
 
 export const register = async (req: Request, res: Response) => {
     try {
-        const { email, name, password, phone, role, companyId, areaId } = req.body;
+        // Validar los datos de entrada con Zod
+        const validatedData = registerSchema.parse(req.body);
+        const { email, name, password, phone, role, companyId, areaId } = validatedData;
+        
         const existing = await UserModel.findOne({ email });
-        if (existing) return res.status(400).json({ error: 'Email already exists' });
-
-        // Validar formato de teléfono
-        if (!phone || !/^\+\d{1,4}\d{6,15}$/.test(phone)) {
-            return res.status(400).json({ error: 'El teléfono debe incluir código de país (ej: +51987654321)' });
+        if (existing) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Email already exists' 
+            });
         }
 
         const hashed = await bcrypt.hash(password, 10);
-        const user = await UserModel.create({ email, name, password: hashed, phone, role, companyId, areaId, isActive: true });
-        res.status(201).json({ id: user._id, email: user.email, name: user.name, phone: user.phone, role: user.role });
+        const user = await UserModel.create({ 
+            email, 
+            name, 
+            password: hashed, 
+            phone, 
+            role, 
+            companyId, 
+            areaId, 
+            isActive: true 
+        });
+        
+        res.status(201).json({ 
+            success: true,
+            data: {
+                id: user._id, 
+                email: user.email, 
+                name: user.name, 
+                phone: user.phone, 
+                role: user.role 
+            }
+        });
     } catch (error) {
-        res.status(400).json({ error: (error as Error).message });
+        // Si es un error de validación de Zod
+        if (error instanceof Error && error.name === 'ZodError') {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Datos de entrada inválidos',
+                details: JSON.parse(error.message)
+            });
+        }
+        
+        res.status(400).json({ 
+            success: false,
+            error: (error as Error).message 
+        });
     }
 };
 
 export const login = async (req: Request, res: Response) => {
     try {
-        const { username, password } = req.body;
+        // Validar los datos de entrada con Zod
+        const validatedData = loginSchema.parse(req.body);
+        const { username, password } = validatedData;
+        
         const user = await UserModel.findOne({ email: username });
-        if (!user || !user.isActive) return res.status(401).json({ error: 'Invalid credentials' });
+        if (!user || !user.isActive) {
+            return res.status(404).json({
+                error: 'User not found or inactive',
+                success: false
+            });
+        }
+        
         const currentUserPassword = '$2b$' + user.password.substring(4);
         const isMatch = await bcrypt.compare(password, currentUserPassword);
-        if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+        if (!isMatch) {
+            return res.status(401).json({
+                error: 'Invalid credentials',
+                success: false
+            });
+        }
 
         let token = await JwtTokenService.buildTokenPayload(toUserEntity(user));
 
@@ -53,15 +95,26 @@ export const login = async (req: Request, res: Response) => {
 
         res.json({
             access_token: token,
-            // token_type: 'Bearer',
-            sucess: true,
+            success: true,
             data: {
                 user: userWithoutPassword
             }
-        })
+        });
 
     } catch (error) {
-        res.status(400).json({ error: (error as Error).message });
+        // Si es un error de validación de Zod
+        if (error instanceof Error && error.name === 'ZodError') {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Datos de entrada inválidos',
+                details: JSON.parse(error.message)
+            });
+        }
+        
+        res.status(400).json({
+            error: (error as Error).message,
+            success: false
+        });
     }
 };
 
@@ -78,22 +131,17 @@ export const me = async (req: Request, res: Response) => {
 // Nuevo endpoint para autenticación por teléfono (para MCP)
 export const phoneLogin = async (req: Request, res: Response) => {
     try {
-        const { phone } = req.body;
-        
-        if (!phone) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Número de teléfono requerido' 
-            });
-        }
+        // Validar los datos de entrada con Zod
+        const validatedData = phoneLoginSchema.parse(req.body);
+        const { phone } = validatedData;
 
         // Buscar usuario por teléfono
         const user = await UserModel.findOne({ phone, isActive: true });
-        
+
         if (!user) {
-            return res.status(404).json({ 
-                success: false, 
-                error: 'Usuario no encontrado con este número de teléfono' 
+            return res.status(404).json({
+                success: false,
+                error: 'Usuario no encontrado con este número de teléfono'
             });
         }
 
@@ -115,10 +163,19 @@ export const phoneLogin = async (req: Request, res: Response) => {
         });
 
     } catch (error) {
+        // Si es un error de validación de Zod
+        if (error instanceof Error && error.name === 'ZodError') {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Datos de entrada inválidos',
+                details: JSON.parse(error.message)
+            });
+        }
+        
         console.error('Error in phoneLogin:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Error interno del servidor' 
+        res.status(500).json({
+            success: false,
+            error: 'Error interno del servidor'
         });
     }
 };

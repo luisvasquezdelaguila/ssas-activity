@@ -1,7 +1,41 @@
 // src/shared/activity-mapper.ts
 
-import { Activity, ActivityStatusHistory } from '../domain/activity.entity';
+import { Activity, ActivityStatusHistory, User, Company } from '../domain/activity.entity';
 import { ActivityDocument } from '../infrastructure/db/activity.model';
+
+function mapUserField(field: any): string | User {
+  if (!field) return '';
+  
+  if (typeof field === 'string') {
+    // Si es un ObjectId o string, retornamos el ID
+    return field;
+  }
+  
+  // Si está populado, retornamos el objeto User
+  return {
+    id: field._id?.toString() || field.id,
+    name: field.name,
+    email: field.email,
+    phone: field.phone,
+    role: field.role,
+  };
+}
+
+function mapCompanyField(field: any): string | Company {
+  if (!field) return '';
+  
+  if (typeof field === 'string' || field._id) {
+    // Si es un ObjectId o string, retornamos el ID
+    return typeof field === 'string' ? field : field._id.toString();
+  }
+  
+  // Si está populado, retornamos el objeto Company
+  return {
+    id: field._id?.toString() || field.id,
+    name: field.name,
+    domain: field.domain,
+  };
+}
 
 export function toActivityEntity(document: ActivityDocument): Activity {
   return {
@@ -9,19 +43,19 @@ export function toActivityEntity(document: ActivityDocument): Activity {
     title: document.title,
     description: document.description,
     status: document.status,
-    assignedTo: document.assignedTo,
-    createdBy: document.createdBy,
+    assignedTo: mapUserField(document.assignedTo),
+    createdBy: mapUserField(document.createdBy),
     startTime: document.startTime,
     endTime: document.endTime,
     statusHistory: document.statusHistory.map(history => ({
       status: history.status as any,
-      changedBy: history.changedBy,
+      changedBy: mapUserField(history.changedBy),
       changedAt: history.changedAt,
-      assignedTo: history.assignedTo,
+      assignedTo: history.assignedTo ? mapUserField(history.assignedTo) : undefined,
       startTime: history.startTime,
       endTime: history.endTime,
     })),
-    companyId: document.companyId,
+    companyId: mapCompanyField(document.companyId),
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
     isActive: document.isActive,

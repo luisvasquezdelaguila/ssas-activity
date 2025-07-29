@@ -27,7 +27,14 @@ export class ActivityRepository implements IActivityRepository {
   }
 
   async findById(id: string): Promise<Activity | null> {
-    const activity = await ActivityModel.findById(id).where({ isActive: true });
+    const activity = await ActivityModel.findById(id)
+      .where({ isActive: true })
+      .populate('assignedTo', 'name email phone role')
+      .populate('createdBy', 'name email phone role')
+      .populate('companyId', 'name domain')
+      .populate('statusHistory.changedBy', 'name email')
+      .populate('statusHistory.assignedTo', 'name email');
+    
     return activity ? toActivityEntity(activity) : null;
   }
 
@@ -36,7 +43,11 @@ export class ActivityRepository implements IActivityRepository {
       assignedTo: userId,
       status: 'pending',
       isActive: true
-    }).sort({ createdAt: -1 });
+    })
+      .populate('assignedTo', 'name email phone role')
+      .populate('createdBy', 'name email phone role')
+      .populate('companyId', 'name domain')
+      .sort({ createdAt: -1 });
 
     return activities.map(toActivityEntity);
   }
@@ -45,7 +56,11 @@ export class ActivityRepository implements IActivityRepository {
     const activities = await ActivityModel.find({
       assignedTo: userId,
       isActive: true
-    }).sort({ createdAt: -1 });
+    })
+      .populate('assignedTo', 'name email phone role')
+      .populate('createdBy', 'name email phone role')
+      .populate('companyId', 'name domain')
+      .sort({ createdAt: -1 });
 
     return activities.map(toActivityEntity);
   }
@@ -60,10 +75,14 @@ export class ActivityRepository implements IActivityRepository {
     }
 
     const activities = await ActivityModel.find({
-      assignedTo: user._id.toString(),
+      assignedTo: user._id,
       status: 'pending',
       isActive: true
-    }).sort({ createdAt: -1 });
+    })
+      .populate('assignedTo', 'name email phone role')
+      .populate('createdBy', 'name email phone role')
+      .populate('companyId', 'name domain')
+      .sort({ createdAt: -1 });
 
     return activities.map(toActivityEntity);
   }
@@ -94,7 +113,10 @@ export class ActivityRepository implements IActivityRepository {
         $push: { statusHistory: historyEntry }
       },
       { new: true }
-    );
+    )
+      .populate('assignedTo', 'name email phone role')
+      .populate('createdBy', 'name email phone role')
+      .populate('companyId', 'name domain');
 
     return updatedActivity ? toActivityEntity(updatedActivity) : null;
   }
@@ -123,7 +145,10 @@ export class ActivityRepository implements IActivityRepository {
         $push: { statusHistory: historyEntry }
       },
       { new: true }
-    );
+    )
+      .populate('assignedTo', 'name email phone role')
+      .populate('createdBy', 'name email phone role')
+      .populate('companyId', 'name domain');
 
     return updatedActivity ? toActivityEntity(updatedActivity) : null;
   }
@@ -132,13 +157,22 @@ export class ActivityRepository implements IActivityRepository {
     const activities = await ActivityModel.find({
       companyId,
       isActive: true
-    }).sort({ createdAt: -1 });
+    })
+      .populate('assignedTo', 'name email phone role')
+      .populate('createdBy', 'name email phone role')
+      .populate('companyId', 'name domain')
+      .sort({ createdAt: -1 });
 
     return activities.map(toActivityEntity);
   }
 
   async findAll(): Promise<Activity[]> {
-    const activities = await ActivityModel.find({ isActive: true }).sort({ createdAt: -1 });
+    const activities = await ActivityModel.find({ isActive: true })
+      .populate('assignedTo', 'name email phone role')
+      .populate('createdBy', 'name email phone role')
+      .populate('companyId', 'name domain')
+      .sort({ createdAt: -1 });
+      
     return activities.map(toActivityEntity);
   }
 
@@ -147,7 +181,10 @@ export class ActivityRepository implements IActivityRepository {
       id,
       { ...activityData, updatedAt: new Date() },
       { new: true }
-    );
+    )
+      .populate('assignedTo', 'name email phone role')
+      .populate('createdBy', 'name email phone role')
+      .populate('companyId', 'name domain');
 
     return updatedActivity ? toActivityEntity(updatedActivity) : null;
   }

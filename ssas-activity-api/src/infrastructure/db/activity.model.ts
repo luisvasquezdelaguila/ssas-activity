@@ -1,24 +1,24 @@
 // src/infrastructure/db/activity.model.ts
 
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface ActivityDocument extends Document {
   title: string;
   description?: string;
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  assignedTo: string;
-  createdBy: string;
+  assignedTo: Types.ObjectId;
+  createdBy: Types.ObjectId;
   startTime?: Date;
   endTime?: Date;
   statusHistory: Array<{
     status: string;
-    changedBy: string;
+    changedBy: Types.ObjectId;
     changedAt: Date;
-    assignedTo?: string;
+    assignedTo?: Types.ObjectId;
     startTime?: Date;
     endTime?: Date;
   }>;
-  companyId: string;
+  companyId: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
@@ -26,9 +26,9 @@ export interface ActivityDocument extends Document {
 
 const ActivityStatusHistorySchema = new Schema({
   status: { type: String, required: true },
-  changedBy: { type: String, required: true },
+  changedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   changedAt: { type: Date, required: true },
-  assignedTo: { type: String },
+  assignedTo: { type: Schema.Types.ObjectId, ref: 'User' },
   startTime: { type: Date },
   endTime: { type: Date },
 }, { _id: false });
@@ -37,12 +37,12 @@ const ActivitySchema = new Schema<ActivityDocument>({
   title: { type: String, required: true },
   description: { type: String },
   status: { type: String, required: true, enum: ['pending', 'in_progress', 'completed', 'cancelled'] },
-  assignedTo: { type: String, required: true },
-  createdBy: { type: String, required: true },
+  assignedTo: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   startTime: { type: Date },
   endTime: { type: Date },
   statusHistory: { type: [ActivityStatusHistorySchema], default: [] },
-  companyId: { type: String, required: true },
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   isActive: { type: Boolean, default: true },
