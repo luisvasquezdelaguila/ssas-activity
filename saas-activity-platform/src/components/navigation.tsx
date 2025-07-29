@@ -24,9 +24,15 @@ export function Navigation() {
   const { currentUser, currentCompany, logout } = useAuthStore();
   const [open, setOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Error durante logout:', error);
+      // Aunque falle, redirigir al login por seguridad
+      router.push('/login');
+    }
   };
 
   const getNavItems = () => {

@@ -11,7 +11,7 @@ export interface AuthSession {
 }
 
 export interface LoginData {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -30,7 +30,7 @@ interface AuthState {
 interface AuthActions {
   login: (data: LoginData) => Promise<void>;
   phoneLogin: (data: PhoneLoginData) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   setCurrentUser: (user: User | null) => void;
   setCurrentCompany: (company: Company | null) => void;
   switchCompany: (companyId: string) => void;
@@ -106,14 +106,23 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      logout: () => {
-        AuthService.logout();
-        set({
-          currentUser: null,
-          currentCompany: null,
-          session: null,
-          error: null,
-        });
+      logout: async () => {
+        set({ isLoading: true });
+        try {
+          await AuthService.logout();
+        } catch (error) {
+          // Esto raramente debería fallar ya que solo limpia local
+          console.warn('Error durante logout:', error);
+        } finally {
+          // Limpiar estado de la aplicación
+          set({
+            currentUser: null,
+            currentCompany: null,
+            session: null,
+            error: null,
+            isLoading: false,
+          });
+        }
       },
 
       setCurrentUser: (user: User | null) => {
@@ -148,8 +157,12 @@ export const useAuthStore = create<AuthStore>()(
             set({ isLoading: false });
           }
         } catch (error) {
-          // Token inválido o expirado
-          AuthService.logout();
+          // Token inválido o expirado - limpiar estado
+          try {
+            await AuthService.logout();
+          } catch (logoutError) {
+            console.warn('Error durante logout automático:', logoutError);
+          }
           set({
             currentUser: null,
             session: null,
@@ -162,12 +175,12 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const isValid = await AuthService.verifyToken();
           if (!isValid) {
-            get().logout();
+            await get().logout();
             return false;
           }
           return true;
         } catch {
-          get().logout();
+          await get().logout();
           return false;
         }
       },

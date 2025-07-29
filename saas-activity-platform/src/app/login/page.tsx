@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,37 +13,48 @@ import { loginSchema, type LoginFormData } from '@/lib/validations';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error } = useAuthStore();
+  const { login, isLoading, error, clearError } = useAuthStore();
   const [showError, setShowError] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+
+  // Limpiar errores cuando el usuario empiece a escribir
+  const watchedFields = watch();
+  useEffect(() => {
+    if (error || showError) {
+      clearError();
+      setShowError(false);
+    }
+  }, [watchedFields.username, watchedFields.password, clearError]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       setShowError(false);
       await login(data);
       
-      // Esperar un momento para que el estado se actualice
-      setTimeout(() => {
-        const currentUser = useAuthStore.getState().currentUser;
-        console.log('Current user after login:', currentUser); // Debug
-        
-        if (currentUser?.role === 'super_admin') {
-          router.push('/super-admin');
-        } else if (currentUser?.role === 'company_admin') {
-          router.push('/admin/users');
-        } else {
-          router.push('/dashboard');
-        }
-      }, 100);
+      // Obtener usuario actualizado del store
+      const currentUser = useAuthStore.getState().currentUser;
+      console.log('Usuario autenticado:', currentUser);
+      
+      // Redireccionar según el rol del usuario
+      if (currentUser?.role === 'super_admin') {
+        router.push('/super-admin');
+      } else if (currentUser?.role === 'company_admin') {
+        router.push('/admin/users');
+      } else if (currentUser?.role === 'operator') {
+        router.push('/activities');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error) {
-      console.error('Login form error:', error); // Debug
+      console.error('Error en login:', error);
       setShowError(true);
     }
   };
@@ -60,15 +71,16 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Usuario</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="tu@email.com"
-                {...register('email')}
+                id="username"
+                type="text"
+                placeholder="Ingresa tu usuario"
+                autoComplete="username"
+                {...register('username')}
               />
-              {errors.email && (
-                <p className="text-sm text-red-600">{errors.email.message}</p>
+              {errors.username && (
+                <p className="text-sm text-red-600">{errors.username.message}</p>
               )}
             </div>
 
@@ -77,7 +89,8 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Ingresa tu contraseña"
+                autoComplete="current-password"
                 {...register('password')}
               />
               {errors.password && (
@@ -87,7 +100,7 @@ export default function LoginPage() {
 
             {(error || showError) && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded">
-                {error || 'Error al iniciar sesión'}
+                {error || 'Credenciales incorrectas. Verifica tu usuario y contraseña.'}
               </div>
             )}
 
@@ -104,21 +117,21 @@ export default function LoginPage() {
             &larr; Volver a la página principal
           </Button>
 
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
+          {/* <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
             <p className="text-sm text-blue-800 font-medium mb-2">Usuarios de prueba:</p>
             <div className="text-xs text-blue-700 space-y-2">
               <div>
-                <p><strong>Super Admin:</strong> admin@platform.com</p>
+                <p><strong>Super Admin:</strong> superadmin</p>
                 <p><strong>Contraseña:</strong> password123</p>
               </div>
               <div>
-                <p><strong>Admin Empresa:</strong> admin@demo.com</p>
-                <p><strong>Operador:</strong> operador@demo.com</p>
-                <p><strong>Usuario:</strong> usuario@demo.com</p>
+                <p><strong>Admin Empresa:</strong> admin</p>
+                <p><strong>Operador:</strong> operador</p>
+                <p><strong>Usuario:</strong> usuario</p>
                 <p><strong>Contraseña:</strong> demo123</p>
               </div>
             </div>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>

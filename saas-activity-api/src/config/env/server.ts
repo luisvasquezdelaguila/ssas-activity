@@ -1,6 +1,5 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
+// Variables de configuración del servidor
+// dotenv ya se configura en index.ts
 
 const appConfig = {
     port: parseInt(process.env.APP_PORT || '3000', 10),

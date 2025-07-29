@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 // Esquemas de validación para formularios
 export const loginSchema = z.object({
-  email: z.string().email({ message: 'Email inválido' }),
+  username: z.string()
+    .min(1, 'El username es requerido')
+    .max(255, 'El username no puede exceder 255 caracteres'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
 });
 

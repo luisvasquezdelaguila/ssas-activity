@@ -12,7 +12,13 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       return res.status(401).json({ error: 'Token de acceso requerido' });
     }
 
-    const { user } = await JwtTokenService.validateToken(token);
+    const { oAuthToken, user } = await JwtTokenService.validateToken(token);
+    
+    // Verificar si el token está revocado
+    if (oAuthToken.revoked) {
+      return res.status(401).json({ error: 'Token revocado - sesión terminada' });
+    }
+    
     (req as any).user = user;
     
     next();

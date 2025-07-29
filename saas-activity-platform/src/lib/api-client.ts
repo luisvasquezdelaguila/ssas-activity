@@ -4,19 +4,7 @@ export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
-  messag  // Método de login
-  async login(username: string, password: string): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    });
-    
-    if (response.token) {
-      this.setToken(response.token);
-    }
-    
-    return response;
-  };
+  message?: string;
 }
 
 export interface ApiError {
@@ -135,9 +123,9 @@ class ApiClient {
   }
 
   // Métodos de autenticación
-  async login(email: string, password: string): Promise<{ token: string; user: any }> {
+  async login(username: string, password: string): Promise<{ token: string; user: any }> {
     const result = await this.post<{ token: string; user: any }>('/auth/login', {
-      email,
+      username,
       password,
     });
 
@@ -154,8 +142,20 @@ class ApiClient {
     return result;
   }
 
-  logout(): void {
-    this.clearAuthToken();
+  async logout(): Promise<void> {
+    try {
+      // Hacer logout en el servidor para auditoría
+      if (this.isAuthenticated()) {
+        await this.post('/auth/logout');
+        console.log('Logout realizado exitosamente en el servidor');
+      }
+    } catch (error) {
+      // Si falla el logout en el servidor, seguimos limpiando el token local
+      console.warn('Error al hacer logout en el servidor:', error);
+    } finally {
+      // Siempre limpiar el token local
+      this.clearAuthToken();
+    }
   }
 
   // Verificar si está autenticado

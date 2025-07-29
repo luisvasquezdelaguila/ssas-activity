@@ -2,6 +2,7 @@
 
 import { Request, Response } from 'express';
 import UserModel from '../db/user.model';
+import { OAuthAccessTokenModel } from '../db/oauth-access-token.model';
 import bcrypt from 'bcryptjs';
 import { JwtTokenService } from '../../shared/jwt-token.service';
 import { toUserEntity } from '../../shared/user-mapper';
@@ -125,6 +126,93 @@ export const me = async (req: Request, res: Response) => {
         res.json(user);
     } catch (error) {
         res.status(400).json({ error: (error as Error).message });
+    }
+};
+
+// Logout endpoint - invalida la sesión del usuario y revoca tokens
+export const logout = async (req: Request, res: Response) => {
+    try {
+        const user = (req as any).user;
+        
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                error: 'Usuario no autenticado'
+            });
+        }
+
+        // Obtener el token del header Authorization
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+        let currentTokenRevoked = 0;
+        let currentTokenId = null;
+
+        if (token) {
+            try {
+                // Decodificar el token para obtener el jti (JWT ID)
+                const decoded = await JwtTokenService.verifyToken(token);
+                // @ts-expect-error: decoded could be string or JwtPayload  
+                currentTokenId = decoded.jti; // El jti es lo que se almacena como tokenId
+
+                // Revocar el token actual específicamente
+                const currentTokenResult = await OAuthAccessTokenModel.updateOne(
+                    { 
+                        tokenId: currentTokenId,
+                        revoked: false 
+                    },
+                    {
+                        $set: {
+                            revoked: true,
+                            socketId: null,
+                            updatedAt: new Date()
+                        }
+                    }
+                );
+                currentTokenRevoked = currentTokenResult.modifiedCount;
+            } catch (tokenError) {
+                console.warn('Error al procesar token actual:', tokenError);
+            }
+        }
+
+        const userId = user.id || user._id;
+
+        // Revocar todos los demás tokens activos del usuario (por seguridad)
+        const otherTokensResult = await OAuthAccessTokenModel.updateMany(
+            { 
+                userId: userId.toString(),
+                revoked: false,
+                ...(currentTokenId && { tokenId: { $ne: currentTokenId } }) // Excluir el token ya revocado
+            },
+            {
+                $set: {
+                    revoked: true,
+                    socketId: null,
+                    updatedAt: new Date()
+                }
+            }
+        );
+
+        const totalTokensRevoked = currentTokenRevoked + otherTokensResult.modifiedCount;
+
+        console.log(`Usuario ${user.email} (ID: ${userId}) hizo logout. Tokens revocados: ${totalTokensRevoked} (actual: ${currentTokenRevoked}, otros: ${otherTokensResult.modifiedCount})`);
+
+        res.json({
+            success: true,
+            message: 'Logout exitoso - todas las sesiones han sido cerradas',
+            data: {
+                loggedOut: true,
+                currentTokenRevoked: currentTokenRevoked > 0,
+                totalTokensRevoked: totalTokensRevoked,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Error in logout:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error interno del servidor'
+        });
     }
 };
 

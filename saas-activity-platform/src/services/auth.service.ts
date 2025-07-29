@@ -10,7 +10,7 @@ export interface LoginResponse {
 }
 
 export interface LoginData {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -19,9 +19,9 @@ export interface PhoneLoginData {
 }
 
 export class AuthService {
-  // Login por email y contraseña
+  // Login por username y contraseña
   static async login(credentials: LoginData): Promise<LoginResponse> {
-    const response = await apiClient.login(credentials.email, credentials.password);
+    const response = await apiClient.login(credentials.username, credentials.password);
     return {
       token: response.token,
       user: response.user,
@@ -39,9 +39,9 @@ export class AuthService {
     };
   }
 
-  // Logout
-  static logout(): void {
-    apiClient.logout();
+  // Logout - Notifica al servidor y limpia el token local
+  static async logout(): Promise<void> {
+    await apiClient.logout();
   }
 
   // Verificar si está autenticado

@@ -1,7 +1,6 @@
-import dotenv from 'dotenv';
+// Variables de configuración de autenticación  
+// dotenv ya se configura en index.ts
 import { Algorithm } from 'jsonwebtoken';
-
-dotenv.config();
 
 interface AuthConfig {
   CLIENT_ID_LARAVEL_PASSPORT: number;

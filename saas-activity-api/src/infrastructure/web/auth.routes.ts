@@ -1,7 +1,7 @@
 // src/infrastructure/web/auth.routes.ts
 
 import { Router } from 'express';
-import { register, login, me, phoneLogin } from './auth.controller';
+import { register, login, me, phoneLogin, logout } from './auth.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -307,5 +307,58 @@ router.post('/phone-login', phoneLogin);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/me', authenticateToken, me);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Cerrar sesión del usuario
+ *     tags: [Autenticación]
+ *     responses:
+ *       200:
+ *         description: Logout exitoso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Logout exitoso"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     loggedOut:
+ *                       type: boolean
+ *                       example: true
+ *                     currentTokenRevoked:
+ *                       type: boolean
+ *                       example: true
+ *                       description: "Si el token actual fue revocado exitosamente"
+ *                     totalTokensRevoked:
+ *                       type: number
+ *                       example: 3
+ *                       description: "Número total de tokens revocados para el usuario"
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2023-12-01T10:30:00.000Z"
+ *       401:
+ *         description: Token no válido o no proporcionado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post('/logout', authenticateToken, logout);
 
 export default router;
