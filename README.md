@@ -1,10 +1,10 @@
-# SSAS Activity Platform
+# SAAS Activity Platform
 
 Sistema completo de gestión de actividades empresariales con arquitectura SaaS, API REST, frontend Next.js y automatización con IA.
 
 ## 🎯 Visión General
 
-SSAS (Software as a Service Activity System) es una plataforma integral que permite a las empresas gestionar sus actividades de manera eficiente, con soporte para múltiples empresas, usuarios y automatización inteligente a través de WhatsApp y agentes de IA.
+SAAS (Software as a Service Activity System) es una plataforma integral que permite a las empresas gestionar sus actividades de manera eficiente, con soporte para múltiples empresas, usuarios y automatización inteligente a través de WhatsApp y agentes de IA.
 
 ## 🏗️ Arquitectura del Sistema
 
@@ -19,7 +19,7 @@ graph TB
     end
     
     subgraph "Backend"
-        B[API REST - ssas-activity-api]
+        B[API REST - saas-activity-api]
         B1[Autenticación JWT]
         B2[CRUD Actividades]
         B3[Gestión Empresas]
@@ -50,8 +50,8 @@ graph TB
 ## 📁 Estructura del Proyecto
 
 ```
-ssas-activity/
-├── 📁 ssas-activity-api/          # API REST Backend
+saas-activity/
+├── 📁 saas-activity-api/          # API REST Backend
 │   ├── src/
 │   │   ├── application/           # Casos de uso
 │   │   ├── domain/               # Entidades y reglas de negocio
@@ -135,7 +135,7 @@ ssas-activity/
 ### 1. **Configurar Backend (API)**
 
 ```bash
-cd ssas-activity-api
+cd saas-activity-api
 
 # Instalar dependencias
 npm install
@@ -180,7 +180,7 @@ npm run dev
 ### Desarrollo Local
 ```bash
 # API Backend
-MONGO_URI=mongodb://localhost:27017/ssas-activity
+MONGO_URI=mongodb://localhost:27017/saas-activity
 PORT=3000
 
 # Frontend
@@ -193,14 +193,14 @@ SSAS_API_URL=http://localhost:3000
 ### Producción
 ```bash
 # API Backend
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/ssas-activity
+MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/saas-activity
 PORT=3000
 
 # Frontend
-NEXT_PUBLIC_API_URL=https://api.ssas-activity.com
+NEXT_PUBLIC_API_URL=https://api.saas-activity.com
 
 # MCP
-SSAS_API_URL=https://api.ssas-activity.com
+SSAS_API_URL=https://api.saas-activity.com
 ```
 
 ## 📊 Flujo de Trabajo con IA
@@ -210,7 +210,7 @@ sequenceDiagram
     participant WA as WhatsApp
     participant N8N as N8N Workflow
     participant MCP as MCP Server
-    participant API as SSAS API
+    participant API as SAAS API
     participant DB as MongoDB
 
     WA->>N8N: Mensaje "¿Qué actividades tengo?"
@@ -240,7 +240,7 @@ sequenceDiagram
 
 ### API Backend
 ```bash
-cd ssas-activity-api
+cd saas-activity-api
 npm test
 npm run test:coverage
 ```
@@ -274,11 +274,11 @@ services:
       - mongodb_data:/data/db
 
   api:
-    build: ./ssas-activity-api
+    build: ./saas-activity-api
     ports:
       - "3000:3000"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/ssas-activity
+      - MONGO_URI=mongodb://mongodb:27017/saas-activity
     depends_on:
       - mongodb
 
@@ -297,7 +297,7 @@ volumes:
 
 #### API (Backend)
 ```bash
-cd ssas-activity-api
+cd saas-activity-api
 npm run build
 npm start
 ```
@@ -322,7 +322,7 @@ npm start
 1. **WhatsApp Evolution API** recibe mensajes
 2. **N8N** procesa y rutea automáticamente
 3. **MCP Server** conecta con Claude/ChatGPT
-4. **SSAS API** maneja datos y lógica de negocio
+4. **SAAS API** maneja datos y lógica de negocio
 5. **Respuesta inteligente** vía WhatsApp
 
 ### APIs Externas Soportadas
@@ -371,10 +371,10 @@ Este proyecto está bajo la **Licencia MIT** - ver [LICENSE](LICENSE) para detal
 
 ## 📞 Soporte y Contacto
 
-- **Email**: [soporte@ssas-activity.com](mailto:soporte@ssas-activity.com)
-- **Documentación**: [docs.ssas-activity.com](https://docs.ssas-activity.com)
-- **Issues**: [GitHub Issues](https://github.com/luisvasquezdelaguila/ssas-activity/issues)
-- **Discord**: [Comunidad SSAS](https://discord.gg/ssas-activity)
+- **Email**: [soporte@saas-activity.com](mailto:soporte@saas-activity.com)
+- **Documentación**: [docs.saas-activity.com](https://docs.saas-activity.com)
+- **Issues**: [GitHub Issues](https://github.com/luisvasquezdelaguila/saas-activity/issues)
+- **Discord**: [Comunidad SAAS](https://discord.gg/saas-activity)
 
 ## 🏆 Créditos
 
@@ -391,7 +391,7 @@ Este proyecto está bajo la **Licencia MIT** - ver [LICENSE](LICENSE) para detal
 
 <div align="center">
 
-**🚀 SSAS Activity Platform - Gestión inteligente de actividades empresariales**
+**🚀 SAAS Activity Platform - Gestión inteligente de actividades empresariales**
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
