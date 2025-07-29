@@ -1,5 +1,5 @@
 {
-  "name": "ssas-activity-api",
+  "name": "saas-activity-api",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {

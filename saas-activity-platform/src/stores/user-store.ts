@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, CreateUserData, UpdateUserData, Area } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
-import bcrypt from 'bcryptjs';
+import { User, CreateUserData, UpdateUserData } from '@/types';
+import { UserService } from '@/services/user.service';
 
 interface UserState {
   users: User[];
@@ -11,7 +10,7 @@ interface UserState {
 }
 
 interface UserActions {
-  loadUsers: () => void;
+  loadUsers: () => Promise<void>;
   createUser: (data: CreateUserData) => Promise<User>;
   updateUser: (id: string, data: UpdateUserData) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
@@ -31,67 +30,26 @@ export const useUserStore = create<UserStore>()(
       error: null,
 
       // Acciones
-      loadUsers: () => {
+      loadUsers: async () => {
+        set({ isLoading: true, error: null });
         try {
-          const users = JSON.parse(localStorage.getItem('saas-platform-users') || '[]');
-          set({ users });
+          const users = await UserService.getUsers();
+          set({ users, isLoading: false });
         } catch (error) {
-          set({ error: 'Error al cargar usuarios' });
+          set({ 
+            error: error instanceof Error ? error.message : 'Error al cargar usuarios',
+            isLoading: false 
+          });
         }
       },
 
       createUser: async (data: CreateUserData) => {
         set({ isLoading: true, error: null });
         try {
-          // Verificar que el email no exista
-          const existingUser = get().users.find(user => user.email === data.email);
-          if (existingUser) {
-            throw new Error('Ya existe un usuario con este email');
-          }
-
-          // Hashear la contraseña
-          const hashedPassword = await bcrypt.hash(data.password, 10);
-
-          // Buscar área por defecto "Colaboradores" para la empresa
-          let areaId = data['areaId'];
-          if (!areaId && data.companyId) {
-            const areasRaw = localStorage.getItem('saas-platform-areas');
-            let areas: Area[] = [];
-            if (areasRaw) {
-              areas = JSON.parse(areasRaw);
-            }
-            let defaultArea = areas.find(a => a.companyId === data.companyId && a.name.toLowerCase() === 'colaboradores');
-            if (!defaultArea) {
-              // Crear área por defecto si no existe
-              defaultArea = {
-                id: uuidv4(),
-                name: 'Colaboradores',
-                companyId: data.companyId,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              };
-              areas.push(defaultArea);
-              localStorage.setItem('saas-platform-areas', JSON.stringify(areas));
-            }
-            areaId = defaultArea.id;
-          }
-
-          const newUser: User = {
-            id: uuidv4(),
-            email: data.email,
-            name: data.name,
-            password: hashedPassword,
-            role: data.role,
-            companyId: data.companyId,
-            areaId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            isActive: true,
-          };
-
+          const newUser = await UserService.createUser(data);
+          
+          // Actualizar lista local
           const users = [...get().users, newUser];
-          localStorage.setItem('saas-platform-users', JSON.stringify(users));
-
           set({ 
             users,
             isLoading: false,
@@ -112,18 +70,13 @@ export const useUserStore = create<UserStore>()(
         set({ isLoading: true, error: null });
         
         try {
+          const updatedUser = await UserService.updateUser(id, data);
+          
+          // Actualizar lista local
           const users = get().users.map(user => 
-            user.id === id 
-              ? {
-                  ...user,
-                  ...data,
-                  updatedAt: new Date(),
-                }
-              : user
+            user.id === id ? updatedUser : user
           );
 
-          localStorage.setItem('saas-platform-users', JSON.stringify(users));
-          
           set({ 
             users,
             isLoading: false,
@@ -142,15 +95,15 @@ export const useUserStore = create<UserStore>()(
         set({ isLoading: true, error: null });
         
         try {
-          // Marcar usuario como inactivo en lugar de eliminarlo
+          await UserService.deleteUser(id);
+          
+          // Actualizar lista local (remover o marcar como inactivo)
           const users = get().users.map(user => 
             user.id === id 
-              ? { ...user, isActive: false, updatedAt: new Date() }
+              ? { ...user, isActive: false }
               : user
           );
 
-          localStorage.setItem('saas-platform-users', JSON.stringify(users));
-          
           set({ 
             users,
             isLoading: false,
